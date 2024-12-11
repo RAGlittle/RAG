@@ -1,0 +1,29 @@
+embedding_config : 
+  embedders: 
+    - endpoint : "localhost:8080"
+      model_id : "Alibaba-NLP/gte-large-en-v1.5"
+      model_type: "MODEL_TYPE_EMBEDDING"
+      sparse : false
+    - endpoint : "localhost:8081"
+      model_id : "naver/efficient-splade-VI-BT-large-query"
+      model_type: "MODEL_TYPE_EMBEDDING"
+      sparse : true
+data_dir: "../data/westernblot/pdf"
+etcd_endpoints:
+  - http://localhost:2379
+
+section_metadata:
+  section_id : westernblot
+  user_description : relating to westernblot analysis in the microbiology field
+  chunk_spec:
+    chunk_size: 800
+    chunk_overlap: 80
+    code_blocks : false
+
+# TODO : this should be paired with embedders I guess like (metric_spec, embedder_id)
+metric_type : L2
+index : ivf_flat
+
+milvus_endpoint : http://localhost:19530
+milvus_password: minioadmin
+milvus_key : minioadmin

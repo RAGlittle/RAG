@@ -1,0 +1,42 @@
+# Make sure to check the documentation at https://goreleaser.com
+version : 2
+
+gomod:
+  dir : ./rag-gateway
+project_name : RAG Gateway
+
+builds:
+  - id: ragger
+    dir : ./rag-gateway
+    main: ./cmd/gateway/main.go
+    goos:
+      - linux
+    goarch:
+      - amd64
+    binary: ragger
+    ldflags:
+      - -extldflags
+      - -static
+      - -s
+      - -X github.com/Synaptic-Lynx/rag-gateway/pkg/version.Version={{.Version}} -X github.com/Synaptic-Lynx/rag-gateway/pkg/version.GitCommit={{.Commit}}
+    flags:
+      - -trimpath
+    env:
+      - CGO_ENABLED=0
+archives:
+  - id: ragger
+    builds:
+      - ragger
+    name_template: '{{ .Binary }}-{{ .Arch }}'
+release:
+  prerelease: auto
+checksum:
+  name_template: 'checksums.txt'
+snapshot:
+  name_template: "{{ incpatch .Version }}-next"
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'

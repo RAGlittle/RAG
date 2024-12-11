@@ -1,0 +1,160 @@
+version: '3.8'
+
+services:
+  etcd-00:
+    image: quay.io/coreos/etcd:v3.5.12
+    hostname: etcd-00
+    command:
+      - etcd
+      - --name=etcd-00
+      - --data-dir=data.etcd
+      - --advertise-client-urls=http://etcd-00:2379
+      - --listen-client-urls=http://0.0.0.0:2379
+      - --initial-advertise-peer-urls=http://etcd-00:2380
+      - --listen-peer-urls=http://0.0.0.0:2380
+      - --initial-cluster=etcd-00=http://etcd-00:2380,etcd-01=http://etcd-01:2380,etcd-02=http://etcd-02:2380
+      - --initial-cluster-state=new
+      - --initial-cluster-token=etcd-cluster-1
+    volumes:
+      - etcd-00vol:/data.etcd
+    networks:
+      - etcd
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1m"
+        max-file: "5"
+    restart: always
+
+  etcd-01:
+    image: quay.io/coreos/etcd:v3.5.12
+    hostname: etcd-01
+    command:
+      - etcd
+      - --name=etcd-01
+      - --data-dir=data.etcd
+      - --advertise-client-urls=http://etcd-01:2379
+      - --listen-client-urls=http://0.0.0.0:2379
+      - --initial-advertise-peer-urls=http://etcd-01:2380
+      - --listen-peer-urls=http://0.0.0.0:2380
+      - --initial-cluster=etcd-00=http://etcd-00:2380,etcd-01=http://etcd-01:2380,etcd-02=http://etcd-02:2380
+      - --initial-cluster-state=new
+      - --initial-cluster-token=etcd-cluster-1
+    volumes:
+      - etcd-01vol:/data.etcd
+    networks:
+      - etcd
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1m"
+        max-file: "5"
+    restart: always
+
+  etcd-02:
+    image: quay.io/coreos/etcd:v3.5.12
+    hostname: etcd-02
+    command:
+      - etcd
+      - --name=etcd-02
+      - --data-dir=data.etcd
+      - --advertise-client-urls=http://etcd-02:2379
+      - --listen-client-urls=http://0.0.0.0:2379
+      - --initial-advertise-peer-urls=http://etcd-02:2380
+      - --listen-peer-urls=http://0.0.0.0:2380
+      - --initial-cluster=etcd-00=http://etcd-00:2380,etcd-01=http://etcd-01:2380,etcd-02=http://etcd-02:2380
+      - --initial-cluster-state=new
+      - --initial-cluster-token=etcd-cluster-1
+    volumes:
+      - etcd-02vol:/data.etcd
+    networks:
+      - etcd
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1m"
+        max-file: "5"
+    restart: always
+  master:
+    image: chrislusf/seaweedfs # use a remote image
+    ports:
+      - 9333:9333
+      - 19333:19333
+      - 9324:9324
+    command: "master -ip=master -ip.bind=0.0.0.0 -metricsPort=9324"
+  volume:
+    image: chrislusf/seaweedfs # use a remote image
+    ports:
+      - 9080:8080
+      - 18080:18080
+      - 9325:9325
+    command: 'volume -mserver="master:9333" -ip.bind=0.0.0.0 -port=8080  -metricsPort=9325'
+    depends_on:
+      - master
+  filer:
+    image: chrislusf/seaweedfs # use a remote image
+    ports:
+      - 8888:8888
+      - 18888:18888
+      - 9326:9326
+    command: 'filer -master="master:9333" -ip.bind=0.0.0.0 -metricsPort=9326'
+    tty: true
+    stdin_open: true
+    depends_on:
+      - master
+      - volume
+  s3:
+    image: chrislusf/seaweedfs # use a remote image
+    ports:
+      - 8333:8333
+      - 9327:9327
+    command: 's3 -filer="filer:8888" -ip.bind=0.0.0.0 -metricsPort=9327 -config=/etc/seaweedfs/s3_config.json'
+    volumes:
+      - type: bind
+        source : ./seaweedfs/s3_config.json
+        target: /etc/seaweedfs/s3_config.json
+    depends_on:
+      - master
+      - volume
+      - filer
+  webdav:
+    image: chrislusf/seaweedfs # use a remote image
+    ports:
+      - 7333:7333
+    command: 'webdav -filer="filer:8888"'
+    depends_on:
+      - master
+      - volume
+      - filer
+
+  nginx:
+    image: nginx:alpine
+    hostname: nginx-etcd
+    volumes:
+      - type: bind
+        source: ./nginx/nginx.conf
+        target: /etc/nginx/nginx.conf
+    networks:
+     - etcd
+    ports:
+      - 2379:2379
+    depends_on:
+      - etcd-00
+      - etcd-01
+      - etcd-02
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1m"
+        max-file: "5"
+    restart: always
+
+
+volumes:
+  etcd-00vol:
+  etcd-01vol:
+  etcd-02vol:
+
+networks:
+  etcd:
+    driver: bridge

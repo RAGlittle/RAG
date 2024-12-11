@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package embedgw.v1;
+
+import "github.com/Synaptic-Lynx/rag-gatewayapi/tei/tei.proto";
+
+service EmbedGateway {
+  rpc Info(tei.v1.InfoRequest) returns (InfoMapResponse);
+  rpc Embed(EmbedSpecificRequest) returns (tei.v1.EmbedResponse);
+
+  // TODO: could consider adding a stream version of embed
+}
+
+message EmbedSpecificRequest {
+  string embeddingID = 1;
+  string inputs      = 2;
+}
+
+message InfoMapResponse {
+  map<string, tei.v1.InfoResponse> info = 1;
+}

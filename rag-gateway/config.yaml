@@ -1,0 +1,18 @@
+model_name : gemma2
+embedding_config : 
+  embedders: 
+    - endpoint : "localhost:8080"
+      model_id : "Alibaba-NLP/gte-large-en-v1.5"
+      model_type: "MODEL_TYPE_EMBEDDING"
+      sparse : false
+    - endpoint : "localhost:8081"
+      model_id : "naver/efficient-splade-VI-BT-large-query"
+      model_type: "MODEL_TYPE_EMBEDDING"
+      sparse : true
+reranker_endpoint : localhost:8082
+ollama_url : http://localhost:11434
+milvus_endpoint : http://localhost:19530
+milvus_password: minioadmin
+milvus_key : minioadmin
+etcd_endpoints:
+  - http://localhost:2379
